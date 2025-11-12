@@ -1,0 +1,28 @@
+#version: '3.8'
+services:
+  mongo1:
+    image: mongo:latest
+    container_name: mongo_1
+    ports:
+      - "27017:27017" 
+  
+  mongo2:
+    image: mongo:latest
+    container_name: mongo_2
+    ports:
+      - "27018:27017" 
+
+  # NUEVO SERVICIO: La aplicación Python containerizada
+  storage_app:
+    # Construye la imagen a partir del Dockerfile en el directorio actual
+    build: 
+      context: ./Parte_2_SAD  # Asegúrate que el Dockerfile está aquí
+    container_name: distributed_app
+    # Asegura que los nodos de MongoDB estén listos antes de que inicie la aplicación
+    depends_on:
+      - mongo1
+      - mongo2
+    # El puerto 27017 y 27018 deben estar accesibles en el host si quieres ejecutar 
+    # desde el host o si quieres ver los logs de pymongo desde el host
+    environment:
+      - MONGODB_HOST=mongo1 # (Opcional) Variables de entorno para la conexión
