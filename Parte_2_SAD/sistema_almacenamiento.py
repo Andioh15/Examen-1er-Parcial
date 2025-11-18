@@ -19,16 +19,16 @@ class DistributedStorage:
         """Intenta conectar a las instancias de MongoDB."""
         print("Intentando conectar a nodos distribuidos...")
         try:
-            # Conexión al PRIMER MongoDB (puerto 27017)  # [cite: 212]
+            # Conexión al PRIMER MongoDB (puerto 27017) 
             self.nodes[0]['client'] = MongoClient('mongodb://localhost:27017', serverSelectionTimeoutMS=5000)
-            # Seleccionar base de datos                              # [cite: 214]
+            # Seleccionar base de datos                              
             self.nodes[0]['db'] = self.nodes[0]['client']['distributed_db']
             self.nodes[0]['client'].admin.command('ping')
             print(f"✔️ Conectado a {self.nodes[0]['name']} (Puerto 27017)")
             
-            # Conexión al SEGUNDO MongoDB (puerto 27018)  # [cite: 215]
+            # Conexión al SEGUNDO MongoDB (puerto 27018) 
             self.nodes[1]['client'] = MongoClient('mongodb://localhost:27018', serverSelectionTimeoutMS=5000)
-            # Seleccionar base de datos                              # [cite: 216]
+            # Seleccionar base de datos                             
             self.nodes[1]['db'] = self.nodes[1]['client']['distributed_db']
             self.nodes[1]['client'].admin.command('ping')
             print(f"✔️ Conectado a {self.nodes[1]['name']} (Puerto 27018)")
@@ -43,17 +43,17 @@ class DistributedStorage:
         # Obtener o generar ID del documento
         document_id = str(document_data.get('id'))
         
-        # Crear hash del ID para distribución consistente  # [cite: 165]
-        hash_value = hashlib.md5(document_id.encode()).hexdigest()  # [cite: 166]
+        # Crear hash del ID para distribución consistente  
+        hash_value = hashlib.md5(document_id.encode()).hexdigest()  
         
-        # Usar módulo para elegir nodo (0 o 1)  # [cite: 168]
+        # Usar módulo para elegir nodo (0 o 1)  
         node_index = int(hash_value, 16) % len(self.nodes)
         
         return self.nodes[node_index]
 
     def insert_document(self, data: Dict[str, Any]):
         """Inserta documento distribuyéndolo entre nodos (Requisito)."""
-        # 1. Seleccionar nodo automáticamente  # [cite: 177]
+        # 1. Seleccionar nodo automáticamente  
         target_node = self._select_node_for_document(data)
         target_db = target_node['db']
         node_name = target_node['name']
@@ -62,18 +62,18 @@ class DistributedStorage:
             print(f"  [X] Nodo destino {node_name} no disponible. Saltando inserción para ID {data.get('id')}.")
             return
 
-        # 2. Preparar documento con metadatos  # [cite: 178]
+        # 2. Preparar documento con metadatos  
         document = {
-            '_id': data.get('id'), # Usar el ID como _id  # [cite: 265]
+            '_id': data.get('id'), # Usar el ID como _id  
             'data': data,
-            'node': node_name, # Guardamos en qué nodo quedó  # [cite: 182]
+            'node': node_name, # Guardamos en qué nodo quedó  
             'created_at': datetime.now()
         }
         
-        # 3. Insertar en el nodo seleccionado  # [cite: 186]
+        # 3. Insertar en el nodo seleccionado 
         try:
-            result = target_db.documents.insert_one(document)  # [cite: 187]
-            # print(f"  [+] Documento {data.get('id')} guardado en {node_name}")  # [cite: 188]
+            result = target_db.documents.insert_one(document)  
+            # print(f"  [+] Documento {data.get('id')} guardado en {node_name}")  
         except pymongo.errors.DuplicateKeyError:
              print(f"  [!] Documento {data.get('id')} ya existe. Saltando inserción.")
         except Exception as e:
@@ -93,10 +93,10 @@ class DistributedStorage:
                 continue
             
             # Buscar en el nodo actual
-            doc = db.documents.find_one({'_id': document_id})  # [cite: 199, 203]
+            doc = db.documents.find_one({'_id': document_id})  
             
             if doc:
-                doc['source_node'] = node_name # Marcar de dónde vino  # [cite: 200, 204]
+                doc['source_node'] = node_name # Marcar de dónde vino  
                 results.append(doc)
                 print(f"  ✔️ Encontrado en {node_name}")
             else:
@@ -144,10 +144,10 @@ def generate_sample_data(num_documents: int = 100) -> List[Dict[str, Any]]:
     sample_data = []
     for i in range(num_documents):
         sample_data.append({
-            'id': i, # ID único para cada documento  # [cite: 224]
+            'id': i, # ID único para cada documento  
             'name': f'Documento_{i}',
             'value': i * 10,
-            'category': f'categoria_{i % 5}', # 5 categorías diferentes  # [cite: 227]
+            'category': f'categoria_{i % 5}', # 5 categorías diferentes  
             'timestamp': datetime.now()
         })
     return sample_data
